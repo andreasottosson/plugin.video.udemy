@@ -101,37 +101,61 @@ def play(course_id, lecture_id):
     print first_file
     plugin.set_resolved_url(first_file['file'])
 
-
-@plugin.route('/course/<course_id>/details/<page>', name='course_details')
-def show_course_details(course_id, page):
+@plugin.route('/course/<course_id>/<chapter_id>/details/', name='chapter_details')
+def show_chapter_details(course_id, chapter_id):
     ensure_login()
-    url = my_courses_url + '/%s/lectures?page=%s' % (course_id, page)
-    course = load_json(url)
+
+# '_class' = 'asset', 'asset_type' = 'Video'
+#    url = my_courses_url + '/%s/lectures?page=%s' % (course_id, page) CHAPTER?????
+
+    url = ""
+
+    chapter = load_json(url)
+
+    lectures = filter(lambda result: result['_class'] == 'lecture', chapter['results'])
+
+    # for lecture in lectures:
+    #     items.append({
+    #         'label': lecture['title'],
+    #         'path': plugin.url_for('course_play', course_id=course_id, lecture_id=lecture['id']),
+    #         'info': {
+    #             'label': lecture['title'],
+    #             'title': lecture['title'],
+    #             'plot': lecture['description'],
+    #             'year': lecture['created']
+    #         },
+    #         'is_playable': True,
+    #         'info_type': 'video',
+    #     })
+
+    #    import web_pdb; web_pdb.set_trace()
+
+    # if course['next']:
+    #     next = course['next']
+    #     pageNo = re.search(r'\d+', next[::-1]).group()[::-1]
+    #     items.append({
+    #         'label': 'next',
+    #         'path': plugin.url_for('course_details', course_id=course_id, page=pageNo),
+    #     })
+
+    return plugin.finish(items)
+
+
+@plugin.route('/course/<course_id>/details/', name='course_details')
+def show_course_details(course_id):
+    ensure_login()
+
+    url = courses_url + '/%s/subscriber-curriculum-items/?page_size=1400&[lecture]=title,object_index,is_published,sort_order,created,asset,supplementary_assets,is_free&fields[quiz]=title,object_index,is_published,sort_order,type&fields[practice]=title,object_index,is_published,sort_order&fields[chapter]=title,object_index,is_published,sort_order&fields[asset]=title,filename,asset_type,status,time_estimation,is_external&caching_intent=True' % (course_id)
+    result = load_json(url)
 
     items = []
-    lectures = filter(lambda result: result['_class'] == 'lecture', course['results'])
-
-    for lecture in lectures:
+    chapters = filter(lambda result: result['_class'] == 'chapter', result['results'])
+    
+    for chapter in chapters:
         items.append({
-            'label': lecture['title'],
-            'path': plugin.url_for('course_play', course_id=course_id, lecture_id=lecture['id']),
-            'info': {
-                'label': lecture['title'],
-                'title': lecture['title'],
-                'plot': lecture['description'],
-                'year': lecture['created']
-            },
-            'is_playable': True,
-            'info_type': 'video',
-        })
-
-    if course['next']:
-        next = course['next']
-        pageNo = re.search(r'\d+', next[::-1]).group()[::-1]
-        items.append({
-            'label': 'next',
-            'path': plugin.url_for('course_details', course_id=course_id, page=pageNo),
-        })
+            'label': chapter['title'],
+            'path': plugin.url_for('courses')
+            })
 
     return plugin.finish(items)
 
@@ -152,7 +176,7 @@ def show_courses():
 
     items = list(map(lambda course: {
         'label': course['title'],
-        'path': plugin.url_for('course_details', course_id=course['id'], page='1'),
+        'path': plugin.url_for('course_details', course_id=course['id']),
         'thumbnail': course['image_480x270'],
         'info_type': 'video',
         'properties': {
